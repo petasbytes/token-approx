@@ -1,0 +1,32 @@
+# Env/secrets
+.env
+.env.*
+.envrc
+
+# OS/editor
+.DS_Store
+.vscode/
+*.code-workspace
+
+# Data
+input/
+# output/
+output/figures
+output/tables
+output/model_coefs.json
+*.log
+tmp/
+temp/
+
+# Go
+bin/
+coverage*/
+*.out
+coverage.html
+*.coverprofile
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.ipynb_checkpoints/
