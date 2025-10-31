@@ -16,7 +16,7 @@ TARGET = 'input_tokens'
 
 # --- Shared defaults (can be overridden in notebooks) ---
 SEED: int = 42
-N_GRID_DEFAULT = [25, 40, 60, 80, 100, 120]
+N_GRID_DEFAULT = [5, 10, 15, 20]
 MAPE_THRESHOLD_DEFAULT = 50
 DECISION_MARGIN_DEFAULT = 0.03
 CV_SPLITS_A_DEFAULT = 5
@@ -426,7 +426,7 @@ def plot_learning_curve(lc_df: pd.DataFrame) -> Axes:
     """Plot learning curve MAE with bootstrap CIs for A and B."""
     fig, ax = plt.subplots(1, 1, figsize=(7, 5))
     xs = lc_df['n'].to_numpy()
-    for prefix, label in [('A', 'A (bytes + intercept)'), ('B', 'B (OLS 4 features)')]:
+    for prefix, label in [('A', 'A (bytes + intercept)'), ('B', 'B (OLS)')]:
         y = lc_df[f'{prefix}_mae'].to_numpy()
         lo = lc_df[f'{prefix}_lo'].to_numpy()
         hi = lc_df[f'{prefix}_hi'].to_numpy()
@@ -434,7 +434,7 @@ def plot_learning_curve(lc_df: pd.DataFrame) -> Axes:
         ax.errorbar(xs, y, yerr=yerr, fmt='-o', label=label)
     ax.set_xlabel('n (samples)')
     ax.set_ylabel('MAE (tokens)')
-    ax.set_title('Learning curves with 10x5 CV and bootstrap CIs')
+    ax.set_title('Learning curves')
     ax.legend()
     plt.tight_layout()
     plt.show()
