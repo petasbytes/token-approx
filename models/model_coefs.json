@@ -1,0 +1,1 @@
+{"type":"linear","w0":-4001.201841273387,"model":"claude-3-7-sonnet-latest","scope":"en-long-one-turn","estimator":"OLS_best_subset","feature_set":["bytes","words"],"w_bytes":0.5758117480861196,"w_words":-1.1822491809479783}

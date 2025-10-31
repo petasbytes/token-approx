@@ -42,7 +42,7 @@ def save_fig(ax_or_fig: Union[Axes, plt.Figure], name: str) -> Path:
     Returns the written path.
     """
     base = Path(__file__).resolve().parents[1]  # poc_token_approx/
-    out_dir = base / 'output' / 'figures'
+    out_dir = base / 'reports' / 'figures'
     out_dir.mkdir(parents=True, exist_ok=True)
     out_path = out_dir / f"{name}.png"
     if isinstance(ax_or_fig, plt.Figure):
@@ -314,7 +314,7 @@ def export_linear_multifeature(
     if out_path is None:
         base = Path(__file__).resolve().parents[1]  # poc_token_approx/
         # Standardize to the same filename used by single-feature export
-        out = base / 'output' / 'model_coefs.json'
+        out = base / 'models' / 'model_coefs.json'
     else:
         out = Path(out_path)
     out.parent.mkdir(parents=True, exist_ok=True)
@@ -655,7 +655,7 @@ def export_single_feature(
     import json
     if out_path is None:
         out_path = Path(__file__).resolve(
-        ).parents[1] / 'output' / 'model_coefs.json'
+        ).parents[1] / 'models' / 'model_coefs.json'
     out_path.parent.mkdir(parents=True, exist_ok=True)
     payload: Dict[str, Any] = {
         'type': feature_type,
