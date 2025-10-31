@@ -9,11 +9,7 @@
 *.code-workspace
 
 # Data
-input/
-# output/
-output/figures
-output/tables
-output/model_coefs.json
+# data/
 *.log
 tmp/
 temp/
