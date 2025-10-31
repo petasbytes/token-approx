@@ -9,7 +9,7 @@
 *.code-workspace
 
 # Data
-# data/
+data/
 *.log
 tmp/
 temp/
