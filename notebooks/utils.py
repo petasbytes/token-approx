@@ -41,7 +41,7 @@ def save_fig(ax_or_fig: Union[Axes, plt.Figure], name: str) -> Path:
     """Save a Matplotlib Axes or Figure to output/figures/{name}.png with tight layout.
     Returns the written path.
     """
-    base = Path(__file__).resolve().parents[1]  # poc_token_approx/
+    base = Path(__file__).resolve().parents[1]
     out_dir = base / 'reports' / 'figures'
     out_dir.mkdir(parents=True, exist_ok=True)
     out_path = out_dir / f"{name}.png"
@@ -182,7 +182,7 @@ def approach_b_elasticnet_cv(
 
     pipe = Pipeline([
         ('scaler', StandardScaler()),
-        ('enet', ElasticNetCV(l1_ratio=l1_ratio_grid, alphas=None,
+        ('enet', ElasticNetCV(l1_ratio=l1_ratio_grid, alphas=100,
          cv=n_splits, random_state=seed, max_iter=100000)),
     ])
     pipe.fit(Xtr, ytr)
@@ -278,8 +278,6 @@ def summarize_and_decide(
     return summary
 
 
-# --- Additions: exporters, bootstrap CI, and coef sanity checks ---
-
 def export_linear_multifeature(
     intercept: float,
     coefs: Dict[str, float],
@@ -312,8 +310,7 @@ def export_linear_multifeature(
             payload[f'w_{k}'] = float(coefs[k])
 
     if out_path is None:
-        base = Path(__file__).resolve().parents[1]  # poc_token_approx/
-        # Standardize to the same filename used by single-feature export
+        base = Path(__file__).resolve().parents[1]
         out = base / 'models' / 'model_coefs.json'
     else:
         out = Path(out_path)
@@ -638,6 +635,56 @@ def plot_residuals_vs(yhat: np.ndarray, resid: np.ndarray, x_series: Optional[pd
         return axes
 
 
+def plot_residuals_grid(
+    yhat: np.ndarray,
+    resid: np.ndarray,
+    df: pd.DataFrame,
+    feat_cols: Sequence[str],
+    cols: int = 3,
+    color: str = 'steelblue',
+) -> np.ndarray:
+    """Residual diagnostics grid: panel 0 is residuals vs predictions (ŷ),
+    followed by residuals vs each feature in feat_cols.
+
+    Returns the flattened array of axes. Uses legacy styling/labels consistent
+    with the original appendix cells.
+    """
+    import math
+
+    panels = ['pred'] + list(feat_cols)
+    n = len(panels)
+    cols = max(1, min(cols, n))
+    rows = math.ceil(n / cols)
+
+    fig, axes = plt.subplots(rows, cols, figsize=(4 * cols + 1, 3.2 * rows))
+    axes = np.atleast_1d(axes).reshape(-1)
+
+    # Panel 0: residuals vs predictions
+    ax = axes[0]
+    ax.scatter(yhat, resid, color=color)
+    ax.axhline(0, color='k', lw=1)
+    ax.set_title('Residuals vs predictions')
+    ax.set_xlabel('ŷ')
+    ax.set_ylabel('y-ŷ')
+
+    # Panels 1..: residuals vs each feature
+    for i, f in enumerate(feat_cols, start=1):
+        ax = axes[i]
+        ax.scatter(df[f], resid, color=color)
+        ax.axhline(0, color='k', lw=1)
+        ax.set_title(f'Residuals vs {f}')
+        ax.set_xlabel(f)
+        ax.set_ylabel('y-ŷ')
+
+    # Hide any unused axes
+    for j in range(i + 1, len(axes)):
+        axes[j].axis('off')
+
+    plt.tight_layout()
+    plt.show()
+    return axes
+
+
 def export_single_feature(
     feature_type: str,
     a: float,
@@ -671,3 +718,256 @@ def export_single_feature(
     with open(out_path, 'w') as f:
         json.dump(payload, f, separators=(',', ':'), ensure_ascii=False)
     return out_path
+
+
+def best_subset_ols(
+    train_df: pd.DataFrame,
+    test_df: pd.DataFrame,
+    features: Sequence[str] = tuple(FEATURES),
+) -> Dict[str, Any]:
+    """Exhaustive 1..k subset OLS using fit_eval; return winner metrics and predictions.
+
+    Returns schema: {
+      model: 'OLS_best_subset', test_mae, test_bias, test_r2,
+      intercept, coefs, yte, pred, cols
+    }
+    """
+    from itertools import combinations
+
+    ytr = train_df[TARGET].to_numpy()
+    yte = test_df[TARGET].to_numpy()
+
+    candidates = []
+    for r in range(1, len(features) + 1):
+        for cols in combinations(features, r):
+            candidates.append(list(cols))
+
+    evals = ols_ablations(train_df, test_df, candidates)
+    best = min(evals, key=lambda d: d['mae']) if evals else None
+    if best is None:
+        return {
+            'model': 'OLS_best_subset',
+            'test_mae': np.nan,
+            'test_bias': np.nan,
+            'test_r2': np.nan,
+            'intercept': np.nan,
+            'coefs': {},
+            'yte': yte,
+            'pred': np.array([]),
+            'cols': [],
+        }
+
+    cols = best['cols']
+    Xtr = train_df[list(cols)].to_numpy()
+    Xte = test_df[list(cols)].to_numpy()
+    lr = LinearRegression(fit_intercept=True)
+    lr.fit(Xtr, ytr)
+    pte = lr.predict(Xte)
+
+    mae = float(mean_absolute_error(yte, pte))
+    bias = float(np.mean(yte - pte))
+    r2 = float(r2_score(yte, pte))
+
+    return {
+        'model': 'OLS_best_subset',
+        'test_mae': mae,
+        'test_bias': bias,
+        'test_r2': r2,
+        'intercept': float(lr.intercept_),
+        'coefs': dict(zip(cols, map(float, lr.coef_))),
+        'yte': yte,
+        'pred': pte,
+        'cols': list(cols),
+    }
+
+
+def abs_error_stats(y_true: np.ndarray, y_pred: np.ndarray) -> Dict[str, float]:
+    """Return median, p95, max, n for absolute error."""
+    ae = np.abs(np.asarray(y_true) - np.asarray(y_pred))
+    n = int(ae.size)
+    if n == 0:
+        return {'median': np.nan, 'p95': np.nan, 'max': np.nan, 'n': 0}
+    return {
+        'median': float(np.median(ae)),
+        'p95': float(np.quantile(ae, 0.95)),
+        'max': float(np.max(ae)),
+        'n': n,
+    }
+
+
+def plot_abs_error_hist(
+    y_true: np.ndarray,
+    y_pred: np.ndarray,
+    bins: Union[str, int, Sequence[float]] = 'auto',
+    title: str = 'Test absolute error',
+    xlabel: str = 'absolute error (tokens)',
+    show_refs: bool = False,
+    ref_values: Optional[Tuple[float, float]] = None,
+    ref_colors: Tuple[str, str] = ('orange', 'red'),
+    ref_styles: Tuple[str, str] = ('--', '--'),
+) -> Axes:
+    """Histogram of absolute errors, optionally with median/p95 reference lines.
+
+    - When show_refs is True, draws vertical lines at median and p95.
+    - You can pass precomputed (median, p95) via ref_values to keep stats
+      consistent with separately computed values in the notebook.
+    """
+    ae = np.abs(np.asarray(y_true) - np.asarray(y_pred))
+    fig, ax = plt.subplots(1, 1, figsize=(6, 4))
+    ax.hist(ae, bins=bins, edgecolor='white', alpha=0.85, color='steelblue')
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel('count')
+    ax.set_title(title)
+
+    if show_refs:
+        if ref_values is None:
+            med = float(np.median(ae)) if ae.size else np.nan
+            p95 = float(np.percentile(ae, 95)) if ae.size else np.nan
+        else:
+            med, p95 = ref_values
+
+        # Draw only if finite
+        if np.isfinite(med):
+            ax.axvline(med, color=ref_colors[0], ls=ref_styles[0], lw=1,
+                       label=f'median ≈ {med:.0f}')
+        if np.isfinite(p95):
+            ax.axvline(p95, color=ref_colors[1], ls=ref_styles[1], lw=1,
+                       label=f'p95 ≈ {p95:.0f}')
+        if any(line.get_label() for line in ax.lines):
+            ax.legend(frameon=False, loc='upper right')
+
+    plt.tight_layout()
+    plt.show()
+    return ax
+
+
+def plot_abs_error_ecdf(
+    y_true: np.ndarray,
+    y_pred: np.ndarray,
+    title: str = 'ECDF of absolute error',
+    label_refs: bool = False,
+    label_p95_offset: tuple[int, int] = (3, 0),
+    label_f95_offset: tuple[int, int] = (0, 3),
+) -> Axes:
+    """Empirical CDF of absolute errors — legacy appendix styling parity, with optional labels."""
+    ae = np.abs(np.asarray(y_true) - np.asarray(y_pred))
+    ae = np.sort(ae)
+    n = ae.size
+    ys = np.arange(1, n + 1) / n if n > 0 else np.array([])
+    p95 = float(np.percentile(ae, 95)) if n > 0 else np.nan
+
+    fig, ax = plt.subplots(figsize=(5, 3.2))
+    ax.step(ae, ys, where='post', color='steelblue')
+    ax.axhline(0.95, ls='--', color='gray', lw=1)
+    if np.isfinite(p95):
+        ax.axvline(p95, ls='--', color='gray', lw=1)
+
+    if label_refs:
+        xmin, xmax = ax.get_xlim()
+        ymin, ymax = ax.get_ylim()
+        xmid = 0.5 * (xmin + xmax)
+        ymid = 0.5 * (ymin + ymax)
+
+        if np.isfinite(p95):
+            ax.annotate(
+                f'p95≈{p95:.0f}', xy=(p95, ymid), xycoords='data',
+                xytext=label_p95_offset, textcoords='offset points',
+                rotation=90, va='center', ha='left',
+                color='gray', fontsize=9, zorder=6
+            )
+
+        ax.annotate(
+            'F=0.95', xy=(xmid, 0.95), xycoords='data',
+            xytext=label_f95_offset, textcoords='offset points',
+            va='bottom', ha='center',
+            color='gray', fontsize=9, zorder=6
+        )
+
+    ax.set_title(title)
+    ax.set_xlabel('absolute error (tokens)')
+    ax.set_ylabel('F(x)')
+    plt.tight_layout()
+    plt.show()
+    return ax
+
+
+def plot_signed_error_vs_pred(
+    y_true: np.ndarray,
+    y_pred: np.ndarray,
+    title: str = 'Signed error vs predicted',
+) -> Axes:
+    """Scatter of predicted vs signed error (y_true - y_pred) — legacy appendix styling parity."""
+    err = np.asarray(y_true) - np.asarray(y_pred)
+    fig, ax = plt.subplots(figsize=(5, 3))
+    ax.scatter(np.asarray(y_pred), err, color='steelblue', alpha=0.9)
+    ax.axhline(0, color='gray', lw=1)
+    ax.set_xlabel('predicted tokens')
+    ax.set_ylabel('signed error (y_true - y_pred)')
+    ax.set_title(title)
+    plt.tight_layout()
+    plt.show()
+    return ax
+
+
+def mape_filtered(
+    y_true: np.ndarray,
+    y_pred: np.ndarray,
+    threshold: float = MAPE_THRESHOLD_DEFAULT,
+) -> Optional[float]:
+    """MAPE after filtering y_true >= threshold; None if no items pass."""
+    y_true = np.asarray(y_true)
+    y_pred = np.asarray(y_pred)
+    mask = y_true >= threshold
+    if not np.any(mask):
+        return None
+    denom = y_true[mask]
+    num = np.abs(y_true[mask] - y_pred[mask])
+    return float(np.mean(num / denom))
+
+
+def scatter_grid_regplot(
+    df: pd.DataFrame,
+    pairs: Sequence[Tuple[str, str]],
+    figsize: Tuple[int, int] = (10, 8),
+    scatter_kws: Optional[Dict[str, Any]] = None,
+    line_kws: Optional[Dict[str, Any]] = None,
+) -> plt.Figure:
+    """2x2 grid of seaborn.regplot for given (x, y) column pairs."""
+    scatter_kws = scatter_kws or {}
+    line_kws = line_kws or {'color': 'orange'}
+    fig, axes = plt.subplots(2, 2, figsize=figsize)
+    axes = np.array(axes).reshape(-1)
+    for i in range(4):
+        ax = axes[i]
+        if i < len(pairs):
+            xcol, ycol = pairs[i]
+            sns.regplot(data=df, x=xcol, y=ycol, ax=ax,
+                        scatter_kws=scatter_kws, line_kws=line_kws)
+            ax.set_title(f'{ycol} vs {xcol}')
+        else:
+            ax.axis('off')
+    plt.tight_layout()
+    plt.show()
+    return fig
+
+
+def resolve_chosen_predictions(
+    summary_b: Dict[str, Any],
+    res_a: Dict[str, Any],
+    res_b_ols: Optional[Dict[str, Any]],
+    res_b_ridge: Optional[Dict[str, Any]],
+    res_b_enet: Optional[Dict[str, Any]],
+) -> Tuple[np.ndarray, np.ndarray, str]:
+    """Resolve decision into (y_true, y_pred, label)."""
+    decision = (summary_b or {}).get('decision', 'A')
+    if decision == 'A' or not any([res_b_ols, res_b_ridge, res_b_enet]):
+        return np.asarray(res_a.get('yte')), np.asarray(res_a.get('pred')), 'A'
+
+    candidates = [r for r in [res_b_ols,
+                              res_b_ridge, res_b_enet] if r is not None]
+    chosen = min(
+        candidates, key=lambda d: d['test_mae']) if candidates else None
+    if chosen is None:
+        return np.asarray(res_a.get('yte')), np.asarray(res_a.get('pred')), 'A'
+    label = f"B:{chosen.get('model', 'unknown')}"
+    return np.asarray(chosen.get('yte')), np.asarray(chosen.get('pred')), label
