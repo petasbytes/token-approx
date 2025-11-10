@@ -22,7 +22,7 @@ func main() {
 
 	getDataCmd := &cobra.Command{
 		Use:     "get-data",
-		Short:   "Download example text into data/raw/oliver-twist_gberg_raw.txt",
+		Short:   "Download example text into data/raw/<basename>_raw.txt",
 		Example: `  token-approx get-data`,
 		Args:    cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -55,7 +55,7 @@ func main() {
 
 	measureCmd := &cobra.Command{
 		Use:     "measure",
-		Short:   "Measure features, get token counts, and append JSONL records to data/processed/datasets/dataset.jsonl",
+		Short:   "Measure features, get token counts, and output to data/processed/datasets/dataset.jsonl",
 		Example: `  token-approx measure`,
 		Args:    cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
