@@ -38,21 +38,22 @@ def corr_heatmap(df: pd.DataFrame, cols: Sequence[str] = (FEATURES + [TARGET])) 
 
 
 def save_fig(ax_or_fig: Union[Axes, plt.Figure], name: str) -> Path:
-    """Save a Matplotlib Axes or Figure to output/figures/{name}.png with tight layout.
-    Returns the written path.
+    """Save a Matplotlib Axes or Figure to reports/figures/{name}.png.
+
+    Returns the repo‑relative path written (e.g. reports/figures/foo.png).
     """
-    base = Path(__file__).resolve().parents[1]
-    out_dir = base / 'reports' / 'figures'
+    repo_root = Path(__file__).resolve().parents[1]
+    out_dir = repo_root / 'reports' / 'figures'
     out_dir.mkdir(parents=True, exist_ok=True)
-    out_path = out_dir / f"{name}.png"
+    out_path_abs = out_dir / f"{name}.png"
     if isinstance(ax_or_fig, plt.Figure):
         fig = ax_or_fig
     else:
         fig = ax_or_fig.get_figure()
     if fig is not None:
         fig.tight_layout()
-        fig.savefig(out_path, dpi=150)
-    return out_path
+        fig.savefig(out_path_abs, dpi=150)
+    return out_path_abs.relative_to(repo_root)
 
 
 def approach_b_ols(train_df: pd.DataFrame, test_df: pd.DataFrame) -> Dict[str, Any]:
@@ -66,13 +67,13 @@ def approach_b_ols(train_df: pd.DataFrame, test_df: pd.DataFrame) -> Dict[str, A
     ols.fit(Xtr, ytr)
     pte = ols.predict(Xte)
     mae = float(mean_absolute_error(yte, pte))
-    bias = float(np.mean(yte - pte))
+    mbe = float(np.mean(yte - pte))
     r2 = float(r2_score(yte, pte))
 
     res = {
         'model': 'OLS',
         'test_mae': mae,
-        'test_bias': bias,
+        'test_mbe': mbe,
         'test_r2': r2,
         'intercept': float(ols.intercept_),
         'coefs': dict(zip(FEATURES, map(float, ols.coef_))),
@@ -143,7 +144,7 @@ def approach_b_ridge_cv(
     intercept_orig = float(ridge.intercept_ - np.sum(w_orig * mean))
 
     mae = float(mean_absolute_error(yte, pte))
-    bias = float(np.mean(yte - pte))
+    mbe = float(np.mean(yte - pte))
     r2 = float(r2_score(yte, pte))
 
     res = {
@@ -151,7 +152,7 @@ def approach_b_ridge_cv(
         'alpha': best_alpha,
         'cv_mae': float(best_cv_mae),
         'test_mae': mae,
-        'test_bias': bias,
+        'test_mbe': mbe,
         'test_r2': r2,
         'intercept': intercept_orig,
         'coefs': dict(zip(FEATURES, map(float, w_orig))),
@@ -198,7 +199,7 @@ def approach_b_elasticnet_cv(
     intercept_orig = float(enet.intercept_ - np.sum(w_orig * mean))
 
     mae = float(mean_absolute_error(yte, pte))
-    bias = float(np.mean(yte - pte))
+    mbe = float(np.mean(yte - pte))
     r2 = float(r2_score(yte, pte))
 
     res = {
@@ -207,7 +208,7 @@ def approach_b_elasticnet_cv(
         'l1_ratio': float(enet.l1_ratio_),
         'cv_mae': None,
         'test_mae': mae,
-        'test_bias': bias,
+        'test_mbe': mbe,
         'test_r2': r2,
         'intercept': intercept_orig,
         'coefs': dict(zip(FEATURES, map(float, w_orig))),
@@ -228,11 +229,11 @@ def summarize_and_decide(
     Returns a dict with the decision and metrics.
     """
     a_mae = float(res_a.get('test_mae'))
-    a_bias = float(res_a.get('test_bias'))
+    a_mbe = float(res_a.get('test_mbe'))
     yte_a = res_a.get('yte')
     mean_y = float(np.mean(yte_a)) if yte_a is not None else np.nan
-    bias_pct = float(
-        abs(a_bias) / mean_y) if mean_y and not np.isnan(mean_y) else np.nan
+    mbe_pct = float(
+        abs(a_mbe) / mean_y) if mean_y and not np.isnan(mean_y) else np.nan
 
     candidates = []
     if res_b_ols is not None:
@@ -259,19 +260,19 @@ def summarize_and_decide(
             reason = f"Approach A retained; B improves MAE by {rel_improve*100:.1f}% (≤ {prefer_margin*100:.0f}% margin)."
 
     # Bias threshold note per plan (2–3% of mean(y))
-    bias_flag = bool(not np.isnan(bias_pct) and bias_pct >
-                     0.03 and not bool(res_a.get('fit_intercept', True)))
+    mbe_flag = bool(not np.isnan(mbe_pct) and mbe_pct >
+                    0.03 and not bool(res_a.get('fit_intercept', True)))
 
     summary = {
         'decision': decision,
         'reason': reason,
         'A_test_mae': a_mae,
-        'A_test_bias': a_bias,
-        'A_bias_pct_of_mean_y': bias_pct,
-        'A_bias_flag_gt3pct_without_intercept': bias_flag,
+        'A_test_mbe': a_mbe,
+        'A_mbe_pct_of_mean_y': mbe_pct,
+        'A_bias_flag_gt3pct_without_intercept': mbe_flag,
         'B_best_model': None if best_b is None else best_b['model'],
         'B_test_mae': None if best_b is None else float(best_b['test_mae']),
-        'B_test_bias': None if best_b is None else float(best_b['test_bias']),
+        'B_test_mbe': None if best_b is None else float(best_b['test_mbe']),
         'B_test_r2': None if best_b is None else float(best_b['test_r2']),
         'B_details': best_b,
     }
@@ -283,12 +284,11 @@ def export_linear_multifeature(
     coefs: Dict[str, float],
     model: str,
     scope: str,
-    out_path: Optional[Path] = None,
     estimator: Optional[str] = None,
     feature_set: Sequence[str] = tuple(FEATURES),
 ) -> Path:
-    """Export a multivariate linear model to JSON in a single standardized file name.
-    Payload: {type: 'linear', w0, w_bytes, ...}. Returns the path written.
+    """Export a multivariate linear model to JSON file.
+    Payload: {type: 'linear', w0, w_bytes, ...}. Returns the repo-relative path written (e.g. models/model_coefs.json).
     """
     import json
     from pathlib import Path
@@ -303,21 +303,15 @@ def export_linear_multifeature(
         payload['estimator'] = estimator
     if feature_set is not None:
         payload['feature_set'] = list(feature_set)
-
-    # Ensure keys ordered and deterministic
     for k in FEATURES:
         if k in coefs:
             payload[f'w_{k}'] = float(coefs[k])
-
-    if out_path is None:
-        base = Path(__file__).resolve().parents[1]
-        out = base / 'models' / 'model_coefs.json'
-    else:
-        out = Path(out_path)
-    out.parent.mkdir(parents=True, exist_ok=True)
-    with open(out, 'w') as f:
+    base_dir = Path.cwd().resolve().parent
+    output_path = base_dir / 'models' / 'model_coefs.json'
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(output_path, 'w') as f:
         json.dump(payload, f, separators=(',', ':'), ensure_ascii=False)
-    return out
+    return output_path
 
 
 def bootstrap_mae_ci(
@@ -519,6 +513,52 @@ def validate_records(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+def load_ground_truth(records_path: Path) -> pd.DataFrame:
+    df = load_records(records_path)
+    df = validate_records(df)
+    return df
+
+
+def load_method_preds(preds_path: Path) -> pd.DataFrame:
+    import json
+    if not Path(preds_path).exists():
+        raise FileNotFoundError(f"preds file not found: {preds_path}")
+    rows = []
+    with open(preds_path, 'r') as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            rows.append(json.loads(line))
+    df = pd.DataFrame(rows)
+    required = ['source_path', 'method_id', 'pred_tokens']
+    missing = [c for c in required if c not in df.columns]
+    if missing:
+        raise ValueError(f"preds missing required columns: {missing}")
+    return df[required]
+
+
+def join_preds_to_ground_truth(
+    df_gt: pd.DataFrame,
+    preds_df: pd.DataFrame,
+    pred_col: str = "pred_tokens",
+) -> pd.DataFrame:
+    if 'source_path' not in df_gt.columns:
+        raise ValueError("df_gt missing 'source_path' column")
+    if 'source_path' not in preds_df.columns:
+        raise ValueError("preds_df missing 'source_path' column")
+    cols = ['source_path']
+    if 'method_id' in preds_df.columns:
+        cols.append('method_id')
+    if pred_col in preds_df.columns:
+        cols.append(pred_col)
+    else:
+        raise ValueError(f"preds_df missing prediction column '{pred_col}'")
+    right = preds_df[cols].copy()
+    joined = df_gt.merge(right, on='source_path', how='left')
+    return joined
+
+
 def cv_single_feature(
     X: np.ndarray,
     y: np.ndarray,
@@ -575,7 +615,7 @@ def fit_single_feature(
         'coef_a': float(lr.coef_[0]),
         'intercept_b': float(lr.intercept_) if fit_intercept else 0.0,
         'test_mae': float(mean_absolute_error(yte, pte)),
-        'test_bias': float(np.mean(yte - pte)),
+        'test_mbe': float(np.mean(yte - pte)),
         'pred': pte,
         'yte': yte,
     }
@@ -691,7 +731,6 @@ def export_single_feature(
     b: float = 0.0,
     model: str = 'claude-3-7-sonnet-latest',
     scope: str = 'en-long-one-turn',
-    out_path: Optional[Path] = None,
     estimator: Optional[str] = 'LinearRegression',
     fit_intercept: Optional[bool] = True,
 ) -> Path:
@@ -700,10 +739,9 @@ def export_single_feature(
     Payload keys: type (feature name), a, b, model, scope. Returns path written.
     """
     import json
-    if out_path is None:
-        out_path = Path(__file__).resolve(
-        ).parents[1] / 'models' / 'model_coefs.json'
-    out_path.parent.mkdir(parents=True, exist_ok=True)
+    base_dir = Path.cwd().resolve().parent
+    output_path = base_dir / 'models' / 'model_coefs.json'
+    output_path.parent.mkdir(parents=True, exist_ok=True)
     payload: Dict[str, Any] = {
         'type': feature_type,
         'a': float(a),
@@ -715,9 +753,9 @@ def export_single_feature(
         payload['estimator'] = estimator
     if fit_intercept is not None:
         payload['fit_intercept'] = bool(fit_intercept)
-    with open(out_path, 'w') as f:
+    with open(output_path, 'w') as f:
         json.dump(payload, f, separators=(',', ':'), ensure_ascii=False)
-    return out_path
+    return output_path
 
 
 def best_subset_ols(
@@ -728,7 +766,7 @@ def best_subset_ols(
     """Exhaustive 1..k subset OLS using fit_eval; return winner metrics and predictions.
 
     Returns schema: {
-      model: 'OLS_best_subset', test_mae, test_bias, test_r2,
+      model: 'OLS_best_subset', test_mae, test_mbe, test_r2,
       intercept, coefs, yte, pred, cols
     }
     """
@@ -748,7 +786,7 @@ def best_subset_ols(
         return {
             'model': 'OLS_best_subset',
             'test_mae': np.nan,
-            'test_bias': np.nan,
+            'test_mbe': np.nan,
             'test_r2': np.nan,
             'intercept': np.nan,
             'coefs': {},
@@ -765,13 +803,13 @@ def best_subset_ols(
     pte = lr.predict(Xte)
 
     mae = float(mean_absolute_error(yte, pte))
-    bias = float(np.mean(yte - pte))
+    mbe = float(np.mean(yte - pte))
     r2 = float(r2_score(yte, pte))
 
     return {
         'model': 'OLS_best_subset',
         'test_mae': mae,
-        'test_bias': bias,
+        'test_mbe': mbe,
         'test_r2': r2,
         'intercept': float(lr.intercept_),
         'coefs': dict(zip(cols, map(float, lr.coef_))),
@@ -793,6 +831,65 @@ def abs_error_stats(y_true: np.ndarray, y_pred: np.ndarray) -> Dict[str, float]:
         'max': float(np.max(ae)),
         'n': n,
     }
+
+
+def evaluate_method_on_split(
+    df_train: pd.DataFrame,
+    df_test: pd.DataFrame,
+    pred_col: str,
+    method_id: str,
+    mape_threshold: float,
+    stage: str = "existing_test",
+) -> Dict[str, Any]:
+    _ = df_train  # placeholder for potential future use; keeps signature aligned
+    if 'input_tokens' not in df_test.columns:
+        raise ValueError("df_test missing 'input_tokens' column")
+    if pred_col not in df_test.columns:
+        raise ValueError(f"df_test missing prediction column '{pred_col}'")
+    y_true = df_test['input_tokens'].to_numpy()
+    y_pred = df_test[pred_col].to_numpy()
+    test_mae = float(mean_absolute_error(y_true, y_pred))
+    test_mbe = float(np.mean(y_true - y_pred))
+    mape_val = mape_filtered(y_true, y_pred, threshold=mape_threshold)
+    if mape_val is None:
+        mape_pct = None
+    else:
+        mape_pct = float(mape_val * 100.0)
+    abs_stats = abs_error_stats(y_true, y_pred)
+    return {
+        'method_id': method_id,
+        'stage': stage,
+        'test_mae': test_mae,
+        'test_mbe': test_mbe,
+        'mape_filtered': mape_val,
+        'mape_filtered_pct': mape_pct,
+        'abs_err_median': float(abs_stats.get('median', np.nan)),
+        'abs_err_p95': float(abs_stats.get('p95', np.nan)),
+        'abs_err_max': float(abs_stats.get('max', np.nan)),
+        'n': int(abs_stats.get('n', 0)),
+    }
+
+
+def build_comparison_table(rows: Sequence[Dict[str, Any]]) -> pd.DataFrame:
+    if not rows:
+        return pd.DataFrame([])
+    df = pd.DataFrame(rows)
+    cols = [
+        'family',
+        'method_id',
+        'stage',
+        'test_mae',
+        'test_mbe',
+        'mape_filtered_pct',
+        'abs_err_median',
+        'abs_err_p95',
+        'abs_err_max',
+        'n',
+    ]
+    # Assume callers provide all required columns; just enforce order and sorting.
+    df = df[cols]
+    df = df.sort_values('test_mae', ascending=True)
+    return df
 
 
 def plot_abs_error_hist(
