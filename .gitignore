@@ -9,8 +9,11 @@
 *.code-workspace
 
 # Data
-data/
+/data/
 models/
+experiments/*/data/raw/
+experiments/*/data/interim/
+experiments/*/data/processed/samples/
 *.log
 tmp/
 temp/
@@ -27,3 +30,6 @@ __pycache__/
 *.pyc
 .venv/
 .ipynb_checkpoints/
+
+# Node
+node_modules/
