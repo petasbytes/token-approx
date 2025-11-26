@@ -75,7 +75,15 @@ def main() -> None:
                        'method_id': METHOD_ID, 'pred_tokens': int(n)}
                 f_out.write(json.dumps(row, separators=(
                     ',', ':'), ensure_ascii=False) + '\n')
-    # Silent on missing entries; they will simply be absent
+
+    # Fail if some paths had no prediction
+    missing = [rel for rel in rel_paths if rel not in results]
+    if missing:
+        sys.stderr.write(
+            f"error: {len(missing)} paths had no anth-ts prediction; "
+            f"examples: {missing[:5]}\n"
+        )
+        sys.exit(1)
 
 
 if __name__ == '__main__':
