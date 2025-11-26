@@ -20,11 +20,9 @@ ENC = tiktoken.get_encoding('cl100k_base')
 def read_text(p: Path) -> str:
     try:
         return p.read_text(encoding='utf-8')
-    except Exception:
-        try:
-            return p.read_text(encoding='utf-8', errors='ignore')
-        except Exception:
-            return ''
+    except Exception as e:
+        sys.stderr.write(f"failed to read {p}: {e}\n")
+        raise
 
 
 def main() -> None:
