@@ -516,6 +516,9 @@ def validate_records(df: pd.DataFrame) -> pd.DataFrame:
 def load_ground_truth(records_path: Path) -> pd.DataFrame:
     df = load_records(records_path)
     df = validate_records(df)
+    # Always drop the last sample to avoid the usually shorter tail chunk
+    if len(df) > 1:
+        df = df.iloc[:-1].reset_index(drop=True)
     return df
 
 

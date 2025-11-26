@@ -35,3 +35,4 @@
 {"source_path":"data/processed/samples/les-trois-mousquetaires_gberg_sample-035.txt","method_id":"tiktoken_cl100k_base","pred_tokens":11161}
 {"source_path":"data/processed/samples/les-trois-mousquetaires_gberg_sample-036.txt","method_id":"tiktoken_cl100k_base","pred_tokens":11315}
 {"source_path":"data/processed/samples/les-trois-mousquetaires_gberg_sample-037.txt","method_id":"tiktoken_cl100k_base","pred_tokens":10167}
+{"source_path":"data/processed/samples/les-trois-mousquetaires_gberg_sample-038.txt","method_id":"tiktoken_cl100k_base","pred_tokens":1}

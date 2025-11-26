@@ -23,3 +23,4 @@
 {"source_path":"data/processed/samples/oliver-twist_gberg_sample-023.txt","method_id":"tiktoken_cl100k_base","pred_tokens":8795}
 {"source_path":"data/processed/samples/oliver-twist_gberg_sample-024.txt","method_id":"tiktoken_cl100k_base","pred_tokens":8908}
 {"source_path":"data/processed/samples/oliver-twist_gberg_sample-025.txt","method_id":"tiktoken_cl100k_base","pred_tokens":8250}
+{"source_path":"data/processed/samples/oliver-twist_gberg_sample-026.txt","method_id":"tiktoken_cl100k_base","pred_tokens":135}

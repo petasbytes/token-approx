@@ -35,3 +35,4 @@
 {"source_path":"data/processed/samples/les-trois-mousquetaires_gberg_sample-035.txt","method_id":"heuristic_3.5-runes-per-token","pred_tokens":10235.142857142857}
 {"source_path":"data/processed/samples/les-trois-mousquetaires_gberg_sample-036.txt","method_id":"heuristic_3.5-runes-per-token","pred_tokens":10202.0}
 {"source_path":"data/processed/samples/les-trois-mousquetaires_gberg_sample-037.txt","method_id":"heuristic_3.5-runes-per-token","pred_tokens":9186.57142857143}
+{"source_path":"data/processed/samples/les-trois-mousquetaires_gberg_sample-038.txt","method_id":"heuristic_3.5-runes-per-token","pred_tokens":0.8571428571428571}
