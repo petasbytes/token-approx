@@ -154,11 +154,11 @@ Before proceeding, complete [Setup](#setup) (incl. Node + `@anthropic-ai/tokeniz
 export ANTHROPIC_API_KEY=...
 ./token-approx measure         # calls Anthropic Token Count API (free, rate-limited)
 ```
-	→ Outputs: 
-		- raw: `data/raw/oliver-twist_gberg_raw.txt`
-		- cleaned: `data/interim/oliver-twist_gberg_clean.txt`
-		- samples: `data/processed/samples/oliver-twist_gberg_sample-XXX.txt`
-		- labeled dataset: `data/processed/datasets/dataset.jsonl`
+Outputs: 
+ - raw: `data/raw/oliver-twist_gberg_raw.txt`
+ - cleaned: `data/interim/oliver-twist_gberg_clean.txt`
+ - samples: `data/processed/samples/oliver-twist_gberg_sample-XXX.txt`
+ - labeled dataset: `data/processed/datasets/dataset.jsonl`
 
 ### 2. Generate baseline predictions for existing methods:
 ```bash
@@ -171,7 +171,7 @@ python scripts/preds_heuristic.py
 # 3) Generate token predictions using tiktoken
 python scripts/preds_tiktoken.py
 ```
-	→ Output: three `preds_*.jsonl` files in `data/processed/datasets/`
+Output: three `preds_*.jsonl` files in `data/processed/datasets/`
 
 ### 3. Run the main experiment notebook (`notebooks/01_eda_and_baselines.ipynb`)
 ```bash
@@ -206,7 +206,7 @@ Before proceeding, ensure you have completed the required [setup](#setup) (incl.
 ```bash
 ./token-approx split
 ```
-	→ Output: multiple `data/processed/samples/<basename>_sample-XXX.txt`
+Output: multiple `data/processed/samples/<basename>_sample-XXX.txt`
 
 ### 2. Ensure you have one `.txt` file per sample in `data/processed/samples/`
 
@@ -217,7 +217,7 @@ Before proceeding, ensure you have completed the required [setup](#setup) (incl.
 export ANTHROPIC_API_KEY=...
 ./token-approx measure
 ```
-	→ Output: `data/processed/datasets/dataset.jsonl`
+Output: `data/processed/datasets/dataset.jsonl`
 
   - Generate baseline token-count predictions for the existing off-the-shelf token approximation methods:
 ```bash
@@ -225,7 +225,7 @@ python scripts/preds_anth-ts.py
 python scripts/preds_heuristic.py
 python scripts/preds_tiktoken.py
 ```
-	→ Output: three `preds_*.jsonl` files in `data/processed/datasets/`
+Output: three `preds_*.jsonl` files in `data/processed/datasets/`
 
 ### 4.  Run the notebooks in `notebooks/`, e.g.:
 ```bash
@@ -233,7 +233,7 @@ source .venv/bin/activate
 jupyter notebook notebooks/01_eda_and_baselines.ipynb
 ```
 
-> [!NOTE]
+> [!TIP]
 > **Idempotence for `token-approx measure`**
 > - Re-running `measure` will **skip already-measured files** identified by `source_path` in `dataset.jsonl`
 > - To re-measure/re-label a single sample, delete its line from the JSONL file and re-run `token-approx measure`
@@ -246,9 +246,9 @@ ___
 
 ### Pre-prepared experiments (`experiments/`)
 
-> [!INFO]
+> [!NOTE]
 > The notebooks in `experiments/` can be read/re-run without any additional data prep (as all relevant data has been pre-computed).
-> 	→ This means you do **not** need an Anthropic API key, Node, the legacy tokenizer, or to run any CLI commands or prediction scripts.
+> → This means you do **not** need an Anthropic API key, Node, the legacy tokenizer, or to run any CLI commands or prediction scripts.
 
 For each narrative text mentioned in the [blog post](https://medium.com/@petasbytes/counting-claude-tokens-without-a-tokenizer-e767f2b6e632), you’ll find a directory under `experiments/`:
 - `experiments/oliver-twist_gberg/`
