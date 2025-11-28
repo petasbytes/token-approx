@@ -9,7 +9,7 @@
 `token-approx` helps you train small, calibrated models that locally approximate Claude token counts using basic text features (bytes, runes, words, lines).
 
 > [!NOTE]
-> This repo contains the code, data and data-prep tooling behind the [blog post](...) **“Counting Claude Tokens Without a Tokenizer”**. You can use it to either:
+> This repo contains the code, data and data-prep tooling behind the [blog post](https://medium.com/@petasbytes/counting-claude-tokens-without-a-tokenizer-e767f2b6e632) **“Counting Claude Tokens Without a Tokenizer”**. You can use it to either:
 > - reproduce the experiments from the post, or
 > - plug in your own dataset and calibrate a local token approximation model for your own text
 
@@ -54,7 +54,7 @@ ___
 - **`data/`** – working directories created and used by the CLI:
   - `data/raw/`, `data/interim/`, `data/processed/samples/`, `data/processed/datasets/`.
 - **`notebooks/`** – top-level notebooks + helpers for fitting and comparing models on `data/processed/datasets/dataset.jsonl`.
-- **`experiments/`** – pre-prepared datasets and notebooks for the three Gutenberg books used in the blog post (fully wired, no data prep or API calls needed).
+- **`experiments/`** – pre-prepared datasets and notebooks for the three Gutenberg books used in the [blog post](https://medium.com/@petasbytes/counting-claude-tokens-without-a-tokenizer-e767f2b6e632) (fully wired, no data prep or API calls needed).
 - **`scripts/`** – helpers to generate predictions from existing off-the-shelf methods ([Anthropic's suggested heuristic](https://platform.claude.com/docs/en/about-claude/glossary#tokens), `tiktoken`, [Anthropic legacy tokenizer](https://github.com/anthropics/anthropic-tokenizer-typescript)).
 
 ___
@@ -250,7 +250,7 @@ ___
 > The notebooks in `experiments/` can be read/re-run without any additional data prep (as all relevant data has been pre-computed).
 > 	→ This means you do **not** need an Anthropic API key, Node, the legacy tokenizer, or to run any CLI commands or prediction scripts.
 
-For each narrative text mentioned in the [blog post](...), you’ll find a directory under `experiments/`:
+For each narrative text mentioned in the [blog post](https://medium.com/@petasbytes/counting-claude-tokens-without-a-tokenizer-e767f2b6e632), you’ll find a directory under `experiments/`:
 - `experiments/oliver-twist_gberg/`
 - `experiments/war-n-peace_gberg/`
 - `experiments/les-trois-mousq_gberg/`
@@ -320,6 +320,6 @@ ___
 ## Further reading
 
 - **Blog post**
-	- [*Counting Claude Tokens Without a Tokenizer*](...) – background, experimental design, results tables, and discussion
+	- [*Counting Claude Tokens Without a Tokenizer*](https://medium.com/@petasbytes/counting-claude-tokens-without-a-tokenizer-e767f2b6e632) – background, experimental design, results tables, and discussion
 - **Related project**
 	- [`go-agent`](https://github.com/petasbytes/go-agent) – LLM-backed agent in Go that originally motivated this token-approximation project
