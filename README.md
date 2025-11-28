@@ -55,7 +55,7 @@ ___
   - `data/raw/`, `data/interim/`, `data/processed/samples/`, `data/processed/datasets/`.
 - **`notebooks/`** – top-level notebooks + helpers for fitting and comparing models on `data/processed/datasets/dataset.jsonl`.
 - **`experiments/`** – pre-prepared datasets and notebooks for the three Gutenberg books used in the [blog post](https://medium.com/@petasbytes/counting-claude-tokens-without-a-tokenizer-e767f2b6e632) (fully wired, no data prep or API calls needed).
-- **`scripts/`** – helpers to generate predictions from existing off-the-shelf methods ([Anthropic's suggested heuristic](https://platform.claude.com/docs/en/about-claude/glossary#tokens), `tiktoken`, [Anthropic legacy tokenizer](https://github.com/anthropics/anthropic-tokenizer-typescript)).
+- **`scripts/`** – helpers to generate predictions from existing off-the-shelf methods ([Anthropic's suggested heuristic](https://platform.claude.com/docs/en/about-claude/glossary#tokens), [`tiktoken`](https://github.com/openai/tiktoken), [Anthropic legacy tokenizer](https://github.com/anthropics/anthropic-tokenizer-typescript)).
 
 ___
 
@@ -65,7 +65,7 @@ You have three main options, depending on how much setup you want to do:
 
 1. **Fastest path – inspect pre-prepared experiments**
 	- Explore already-run experiments for the example datasets (no additional data prep or API calls required)
-		→ see [Experiment & notebooks](#experiments-notebooks-fastest-path)
+		→ see [Experiment & notebooks](#experiments--notebooks-fastest-path)
 
 2. **From-scratch pipeline – reproduce Oliver Twist experiment end-to-end**
 	Run the full pipeline on the example Gutenberg dataset:
@@ -139,7 +139,7 @@ Before proceeding, complete [Setup](#setup) (incl. Node + `@anthropic-ai/tokeniz
 > [!IMPORTANT]
 > Run all commands from repo root
 
-1. Prepare and label the example data (Oliver Twist):
+### 1. Prepare and label the example data (Oliver Twist):
 ```bash
 # 1) Download raw text
 ./token-approx get-data
@@ -160,7 +160,7 @@ export ANTHROPIC_API_KEY=...
 		- samples: `data/processed/samples/oliver-twist_gberg_sample-XXX.txt`
 		- labeled dataset: `data/processed/datasets/dataset.jsonl`
 
-2. Generate baseline predictions for existing methods:
+### 2. Generate baseline predictions for existing methods:
 ```bash
 # 1) Generate token predictions using the legacy tokenizer
 python scripts/preds_anth-ts.py
@@ -173,7 +173,7 @@ python scripts/preds_tiktoken.py
 ```
 	→ Output: three `preds_*.jsonl` files in `data/processed/datasets/`
 
-3. Run the main experiment notebook (`notebooks/01_eda_and_baselines.ipynb`)
+### 3. Run the main experiment notebook (`notebooks/01_eda_and_baselines.ipynb`)
 ```bash
 source .venv/bin/activate
 jupyter notebook notebooks/01_eda_and_baselines.ipynb
@@ -185,7 +185,7 @@ This main notebook will:
 - fit and compare single- and multi-feature linear models
 - export coefficients to `models/model_coefs.json`
 
-4. Optional: Run the appendix notebook (`notebooks/02_appendix_diagnostics.ipynb`) to explore additional diagnostics and plots.
+### 4. Optional: Run the appendix notebook (`notebooks/02_appendix_diagnostics.ipynb`) to explore additional diagnostics and plots.
 
 ___
 
@@ -201,16 +201,16 @@ Before proceeding, ensure you have completed the required [setup](#setup) (incl.
 > If you **already have per-sample `.txt` files** then skip to step 2.
 
 
-1. *(Optional – only if starting with a single large cleaned file)*  
+### 1. *(Optional – only if starting with a single large cleaned file)*  
    Place your cleaned text file at `data/interim/<basename>_clean.txt`, then split it into samples:
 ```bash
 ./token-approx split
 ```
 	→ Output: multiple `data/processed/samples/<basename>_sample-XXX.txt`
 
-2. Ensure you have one `.txt` file per sample in `data/processed/samples/`
+### 2. Ensure you have one `.txt` file per sample in `data/processed/samples/`
 
-3. Generate labeled dataset and baseline prediction files for the off-the-shelf methods:
+### 3. Generate labeled dataset and baseline prediction files for the off-the-shelf methods:
 
   - Compute features and label with token counts:
 ```bash
@@ -227,7 +227,7 @@ python scripts/preds_tiktoken.py
 ```
 	→ Output: three `preds_*.jsonl` files in `data/processed/datasets/`
 
-4.  Run the notebooks in `notebooks/`, e.g.:
+### 4.  Run the notebooks in `notebooks/`, e.g.:
 ```bash
 source .venv/bin/activate
 jupyter notebook notebooks/01_eda_and_baselines.ipynb
@@ -265,9 +265,9 @@ Each has ready-to-go:
 
 To explore a specific book’s experiment:
 
-1. [Setup](#setup) notebook dependencies and virtual environment
+### 1. [Setup](#setup) notebook dependencies and virtual environment
 
-2. Open the relevant notebook for that book, e.g.:
+### 2. Open the relevant notebook for that book, e.g.:
 ```bash
 source .venv/bin/activate
 jupyter notebook experiments/oliver-twist_gberg/notebooks/01_eda_and_baselines_oliver-twist.ipynb
