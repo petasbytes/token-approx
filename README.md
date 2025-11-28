@@ -4,7 +4,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/petasbytes/token-approx)](https://goreportcard.com/report/github.com/petasbytes/token-approx)
 [![License](https://img.shields.io/github/license/petasbytes/token-approx.svg)](LICENSE)
 
-**Evidence-based, lightweight local token approximation for Claude**
+### Evidence-based, lightweight local token approximation for Claude
 
 `token-approx` helps you train small, calibrated models that locally approximate Claude token counts using basic text features (bytes, runes, words, lines).
 
@@ -185,7 +185,7 @@ This main notebook will:
 - fit and compare single- and multi-feature linear models
 - export coefficients to `models/model_coefs.json`
 
-### 4. Optional: Run the appendix notebook (`notebooks/02_appendix_diagnostics.ipynb`) to explore additional diagnostics and plots.
+### 4. Optional: Run the appendix notebook (`notebooks/02_appendix_diagnostics.ipynb`)
 
 ___
 
@@ -227,7 +227,7 @@ python scripts/preds_tiktoken.py
 ```
 Output: three `preds_*.jsonl` files in `data/processed/datasets/`
 
-### 4.  Run the notebooks in `notebooks/`, e.g.:
+### 4. Run the notebooks in `notebooks/`
 ```bash
 source .venv/bin/activate
 jupyter notebook notebooks/01_eda_and_baselines.ipynb
@@ -267,7 +267,8 @@ To explore a specific book’s experiment:
 
 ### 1. [Setup](#setup) notebook dependencies and virtual environment
 
-### 2. Open the relevant notebook for that book, e.g.:
+### 2. Open the relevant notebook for that book
+For example:
 ```bash
 source .venv/bin/activate
 jupyter notebook experiments/oliver-twist_gberg/notebooks/01_eda_and_baselines_oliver-twist.ipynb
